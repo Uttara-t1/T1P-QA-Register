@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QA Review Manager — Tier 1 Professionals</title>
+<style>
+/* ============================================================
+   TIER 1 PROFESSIONALS — QA Review Manager v2.0
+   SharePoint List backend via MSAL + Graph API
+   Navy: #1D2251 | Gold: #C9A14A | Dark: #1A1A1A | Grey: #F4F4F4
+   ============================================================ */
+*{box-sizing:border-box;margin:0;padding:0;font-family:Arial,'Segoe UI',sans-serif}
+body{background:#F4F4F4;color:#1A1A1A;font-size:13px;min-height:100vh}
+a{color:#1D2251;text-decoration:none}
+#app{display:flex;flex-direction:column;height:100vh}
+#header{background:#1D2251;color:#fff;padding:14px 24px;display:flex;align-items:center;gap:20px;flex-shrink:0;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+#header .t1p-logo{height:38px;flex-shrink:0}
+#header .header-divider{color:rgba(255,255,255,.3);font-size:24px;font-weight:200}
+#header .header-centre{flex:1;text-align:center}
+#header .doc-title-header{font-size:17px;font-weight:800;color:#fff;margin:2px 0;letter-spacing:.3px}
+#header .version-tag{font-size:11px;color:rgba(255,255,255,.6);letter-spacing:.2px}
+#header .header-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+#header label{color:rgba(255,255,255,.7);font-size:11px}
+#current-user-display{color:#fff;font-weight:600;cursor:pointer;font-size:12px;padding:5px 10px;border:1px solid rgba(255,255,255,.25);border-radius:4px;background:rgba(255,255,255,.08)}
+#current-user-display:hover{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.5)}
+#sync-status{font-size:11px;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:5px}
+#sync-dot{width:8px;height:8px;border-radius:50%;background:#666;display:inline-block;flex-shrink:0}
+#sync-dot.synced{background:#4CAF50}
+#sync-dot.syncing{background:#C9A14A;animation:pulse 1s infinite}
+#sync-dot.error{background:#B71C1C}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+#tabs{background:#fff;border-bottom:2px solid #1D2251;padding:0 24px;display:flex;flex-shrink:0;overflow-x:auto}
+.tab-btn{padding:12px 22px;cursor:pointer;color:#1D2251;font-size:13px;font-weight:700;border:none;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;background:none;transition:all .15s;letter-spacing:.2px}
+.tab-btn:hover{background:#F4F4F4}
+.tab-btn.active{border-bottom-color:#1D2251;color:#1D2251;background:#F4F4F4}
+.tab-btn.hero{color:#C9A14A}
+#main{flex:1;overflow-y:auto;padding:24px;background:#F4F4F4}
+.tab-content{max-width:1400px;margin:0 auto}
+.card{background:#fff;border-radius:6px;border:1px solid #D9D9D9;padding:14px;box-shadow:0 1px 2px rgba(29,34,81,.04)}
+.card-title{font-size:11px;color:#1D2251;text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px;font-weight:700;padding-bottom:6px;border-bottom:1px solid #D9D9D9}
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border-radius:6px;border:1px solid #D9D9D9;border-top:3px solid #1D2251;padding:14px;text-align:center;box-shadow:0 1px 2px rgba(29,34,81,.04)}
+.kpi.kpi-overdue{border-top-color:#B71C1C}
+.kpi.kpi-unassigned{border-top-color:#666}
+.kpi.kpi-closed{border-top-color:#2E7D32}
+.kpi .val{font-size:32px;font-weight:700;color:#1D2251;line-height:1.1}
+.kpi.kpi-overdue .val{color:#B71C1C}
+.kpi.kpi-closed .val{color:#2E7D32}
+.kpi.kpi-unassigned .val{color:#666}
+.kpi .lbl{font-size:11px;color:#666;margin-top:4px;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+svg text{font-family:Calibri,'Segoe UI',Arial,sans-serif;fill:#1A1A1A}
+.wl-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.wl-label{width:160px;font-size:11px;color:#1A1A1A;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.wl-bar-wrap{flex:1;background:#F4F4F4;border-radius:3px;height:16px;overflow:hidden;position:relative;border:1px solid #D9D9D9}
+.wl-bar-open{height:100%;background:#1D2251;display:inline-block;vertical-align:top}
+.wl-bar-closed{height:100%;background:#2E7D32;display:inline-block;vertical-align:top}
+.wl-count{font-size:10px;color:#666;width:60px;text-align:right;flex-shrink:0}
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600;white-space:nowrap;border:1px solid transparent}
+.badge-grey{background:#F4F4F4;color:#1A1A1A;border-color:#D9D9D9}
+.badge-amber{background:#FFF2CC;color:#8A6300;border-color:#E8D595}
+.badge-blue{background:#E3E6F2;color:#1D2251;border-color:#BFC4DE}
+.badge-green{background:#C6EFCE;color:#1B5E20;border-color:#9CCEA3}
+.badge-red{background:#FFC7CE;color:#9A0007;border-color:#E89BA3}
+.badge-pri-high{background:#FFC7CE;color:#9A0007;border-color:#E89BA3}
+.badge-pri-med{background:#FFF2CC;color:#8A6300;border-color:#E8D595}
+.badge-pri-low{background:#C6EFCE;color:#1B5E20;border-color:#9CCEA3}
+.rpeq-flag{display:inline-block;background:#1D2251;color:#C9A14A;padding:1px 6px;border-radius:3px;font-size:9px;font-weight:700;letter-spacing:.5px}
+.filter-bar{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;align-items:flex-end;background:#fff;padding:10px 12px;border-radius:6px;border:1px solid #D9D9D9}
+.filter-bar select,.filter-bar input{background:#fff;border:1px solid #D9D9D9;color:#1A1A1A;padding:5px 8px;border-radius:4px;font-size:12px;font-family:inherit}
+.filter-bar select:focus,.filter-bar input:focus{outline:none;border-color:#1D2251;box-shadow:0 0 0 2px rgba(29,34,81,.1)}
+.filter-bar input[type=text]{width:160px}
+.filter-bar input[type=date]{width:130px}
+.filter-bar label{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:.5px;font-weight:600}
+.tbl-wrap{overflow-x:auto;background:#fff;border-radius:6px;border:1px solid #D9D9D9}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:#1D2251;color:#fff;padding:9px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;cursor:pointer;white-space:nowrap;user-select:none}
+th:hover{background:#2A3068;color:#C9A14A}
+th.sorted-asc::after{content:' ↑';color:#C9A14A}
+th.sorted-desc::after{content:' ↓';color:#C9A14A}
+td{padding:7px 8px;border-bottom:1px solid #E8E8E8;vertical-align:middle;color:#1A1A1A}
+tbody tr:nth-child(odd) td{background:#F4F4F4}
+tbody tr:nth-child(even) td{background:#fff}
+tbody tr:hover td{background:#E8EBF5}
+tr.overdue td{background:#FFC7CE !important}
+tr.overdue:hover td{background:#F4B4BC !important}
+tr.overdue .due-cell{color:#9A0007;font-weight:700}
+.due-cell small{display:block;font-size:10px;color:#666;margin-top:1px}
+tr.overdue .due-cell small{color:#9A0007;font-weight:600}
+select.inline{background:#fff;border:1px solid #D9D9D9;color:#1A1A1A;padding:3px 4px;border-radius:3px;font-size:11px;max-width:140px;font-family:inherit}
+select.inline:focus{outline:none;border-color:#1D2251}
+.btn{padding:6px 14px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;border:none;transition:all .15s;font-family:inherit}
+.btn-amber{background:#1D2251;color:#fff}
+.btn-amber:hover{background:#2A3068}
+.btn-primary{background:#1D2251;color:#fff}
+.btn-primary:hover{background:#2A3068}
+.btn-sm{padding:4px 9px;font-size:11px}
+.btn-ghost{background:#fff;border:1px solid #D9D9D9;color:#1A1A1A}
+.btn-ghost:hover{border-color:#1D2251;color:#1D2251;background:#F4F4F4}
+.btn-red{background:#B71C1C;color:#fff}
+.btn-red:hover{background:#9A0007}
+.btn-green{background:#2E7D32;color:#fff}
+.btn-green:hover{background:#1B5E20}
+.btn-gold{background:#C9A14A;color:#1D2251}
+.btn-gold:hover{background:#B8902F}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+#queue-hero{background:linear-gradient(135deg,#1D2251 0%,#2A3068 100%);color:#fff;padding:18px 22px;border-radius:6px;margin-bottom:14px;border-left:4px solid #C9A14A}
+#queue-hero h2{color:#fff;font-size:16px;font-weight:700;letter-spacing:.5px;margin:0}
+#queue-hero p{color:rgba(255,255,255,.75);font-size:12px;margin-top:4px}
+.queue-item{background:#fff;border:1px solid #D9D9D9;border-left:4px solid #1D2251;border-radius:6px;padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.queue-item.overdue{border-left-color:#B71C1C;background:#FFF5F6}
+.queue-item .qi-main{flex:1}
+.qi-title{font-size:13px;font-weight:700;color:#1D2251}
+.qi-meta{font-size:11px;color:#666;margin-top:3px}
+.qi-meta strong{color:#1A1A1A}
+#modal-bg{display:none;position:fixed;inset:0;background:rgba(29,34,81,.45);z-index:200;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+#modal-bg.open{display:flex}
+#modal{background:#fff;border-radius:8px;border:1px solid #D9D9D9;width:640px;max-width:95vw;max-height:90vh;overflow-y:auto;padding:0;box-shadow:0 10px 40px rgba(29,34,81,.25)}
+#modal h2{font-size:14px;font-weight:700;color:#fff;margin:0;padding:14px 20px;background:#1D2251;border-bottom:2px solid #C9A14A;text-transform:uppercase;letter-spacing:.5px}
+#modal .form-grid,#modal .modal-actions{padding:0 20px}
+#modal .form-grid{padding-top:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group.full{grid-column:1/-1}
+.form-group label{font-size:10px;color:#1D2251;text-transform:uppercase;letter-spacing:.5px;font-weight:700}
+.form-group input,.form-group select,.form-group textarea{background:#fff;border:1px solid #D9D9D9;color:#1A1A1A;padding:7px 10px;border-radius:4px;font-size:12px;font-family:inherit}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{outline:none;border-color:#1D2251;box-shadow:0 0 0 2px rgba(29,34,81,.1)}
+.form-group textarea{resize:vertical;min-height:70px}
+.form-group input.err,.form-group select.err{border-color:#B71C1C;background:#FFF5F6}
+.form-err{color:#B71C1C;font-size:10px;margin-top:2px;font-weight:600}
+.modal-actions{display:flex;gap:8px;justify-content:flex-end;padding:14px 20px 18px;border-top:1px solid #D9D9D9;margin-top:16px;background:#F4F4F4}
+.scope-group{background:#fff;border:1px solid #D9D9D9;border-radius:6px;margin-bottom:10px;overflow:hidden}
+.scope-header{padding:11px 14px;background:#1D2251;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:13px;letter-spacing:.3px}
+.scope-header:hover{background:#2A3068}
+.scope-toggle{color:#C9A14A;font-size:14px;font-weight:700}
+.scope-body{padding:12px 14px;background:#fff}
+.scope-row{display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:6px 0;border-bottom:1px solid #F4F4F4}
+.scope-row:last-child{border-bottom:none;margin-bottom:0}
+.scope-name{width:220px;font-size:12px;color:#1A1A1A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.scope-counts{display:flex;gap:6px;font-size:11px;width:200px}
+.progress-wrap{flex:1;background:#F4F4F4;border-radius:3px;height:12px;overflow:hidden;border:1px solid #D9D9D9}
+.progress-fill{height:100%;background:linear-gradient(90deg,#2E7D32,#43A047);transition:width .3s}
+.progress-pct{font-size:11px;color:#1A1A1A;width:42px;text-align:right;font-weight:600}
+.team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.team-card{background:#fff;border:1px solid #D9D9D9;border-left:3px solid #1D2251;border-radius:6px;padding:12px 14px;display:flex;justify-content:space-between;align-items:flex-start}
+.team-card.has-overdue{border-left-color:#B71C1C}
+.team-name{font-size:13px;font-weight:700;color:#1D2251}
+.team-stats{font-size:11px;color:#666;margin-top:4px}
+.team-stats .overdue-text{color:#B71C1C;font-weight:700}
+.bulk-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;padding:9px 14px;background:#1D2251;color:#fff;border-radius:6px;border-left:3px solid #C9A14A;display:none}
+.bulk-bar.visible{display:flex}
+.bulk-bar select{background:#fff;border:1px solid #D9D9D9;color:#1A1A1A;padding:4px 8px;border-radius:3px;font-size:12px}
+.action-bar{display:flex;gap:8px;margin-bottom:12px;align-items:center;flex-wrap:wrap}
+.action-bar h2{font-size:14px;color:#1D2251;text-transform:uppercase;letter-spacing:.5px;margin:0}
+.empty{text-align:center;padding:40px;color:#666;font-size:14px;background:#fff;border:1px dashed #D9D9D9;border-radius:6px}
+#footer{background:#1D2251;color:rgba(255,255,255,.7);padding:8px 20px;font-size:10px;text-align:center;letter-spacing:.3px;flex-shrink:0;border-top:1px solid #C9A14A}
+#footer span{color:#C9A14A}
+/* Loading overlay */
+#loading-overlay{position:fixed;inset:0;background:rgba(29,34,81,.7);z-index:999;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;gap:16px}
+#loading-overlay.hidden{display:none}
+.spinner{width:40px;height:40px;border:4px solid rgba(255,255,255,.3);border-top-color:#C9A14A;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Auth panel */
+#auth-panel{position:fixed;inset:0;background:rgba(29,34,81,.85);z-index:998;display:flex;align-items:center;justify-content:center}
+#auth-panel.hidden{display:none}
+#auth-box{background:#fff;border-radius:8px;padding:32px 40px;max-width:420px;width:90%;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+#auth-box h2{color:#1D2251;font-size:18px;margin-bottom:8px}
+#auth-box p{color:#666;font-size:13px;margin-bottom:24px;line-height:1.6}
+.audit-ts{color:#666;font-size:11px;white-space:nowrap;font-family:'SF Mono',Consolas,monospace}
+@media print{
+  #tabs,#header .header-right,#header .version-tag,.action-bar,.filter-bar,.bulk-bar,#footer,.btn{display:none!important}
+  body{background:#fff;color:#000}
+  #main{padding:0;overflow:visible}
+  .card,.kpi,.queue-item,.scope-group{background:#fff;border:1px solid #999;color:#000;page-break-inside:avoid}
+  .kpi .val{color:#1D2251}
+  table{font-size:10px}
+  th{background:#1D2251!important;color:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  td,th{border:1px solid #999;color:#000}
+  tr.overdue td{background:#FFC7CE!important;-webkit-print-color-adjust:exact}
+}
+</style>
+</head>
+<body>
+
+<!-- Loading overlay -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div id="loading-msg" style="font-size:14px;font-weight:600">Loading QA Register…</div>
+</div>
+
+<!-- Auth panel -->
+<div id="auth-panel" class="hidden">
+  <div id="auth-box">
+    <img src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3OTYuMzQgMTEwLjk1Ij4KICA8ZGVmcz4KICAgIDxzdHlsZT4KICAgICAgLmNscy0xIHsKICAgICAgICBmaWxsOiAjMUQyMjUxOwogICAgICB9CiAgICA8L3N0eWxlPgogIDwvZGVmcz4KICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Im01NS40NywwQzI0Ljg0LDAsMCwyNC44NCwwLDU1LjQ3czI0Ljg0LDU1LjQ3LDU1LjQ3LDU1LjQ3LDU1LjQ3LTI0Ljg0LDU1LjQ3LTU1LjQ3Uzg2LjExLDAsNTUuNDcsMFptOS4zMiw5NC40OWgtMTAuOWw5LjQ1LTQ3LjE1aDEwLjlsLTkuNDUsNDcuMTVabTIxLjQ3LTUzLjk4aC0yOC45NGwtNy42OCwzOC4yNWgtMTAuOWw3LjY4LTM4LjI1aC0yNC41OGwxLjg2LTEwLjI0aDY0LjQybC0xLjg2LDEwLjI0WiIvPgo8L3N2Zz4=" alt="T1P" style="height:48px;margin-bottom:16px">
+    <h2>QA Review Manager</h2>
+    <p>Sign in with your Tier 1 Professionals Microsoft account to access the shared QA Register.</p>
+    <button class="btn btn-amber" onclick="signIn()" style="width:100%;padding:10px;font-size:14px">Sign in with Microsoft</button>
+  </div>
+</div>
+
+<div id="app">
+  <div id="header">
+    <a href="https://tier1professionals.com/" target="_blank" rel="noopener" style="display:flex;align-items:center;flex-shrink:0">
+      <img class="t1p-logo" src="data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBlbmNvZGluZz0iVVRGLTgiPz4KPHN2ZyBpZD0iTGF5ZXJfMSIgZGF0YS1uYW1lPSJMYXllciAxIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA3OTYuMzQgMTEwLjk1Ij4KICA8ZGVmcz4KICAgIDxzdHlsZT4KICAgICAgLmNscy0xIHsKICAgICAgICBmaWxsOiAjZmZmOwogICAgICB9CiAgICA8L3N0eWxlPgogIDwvZGVmcz4KICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Im01NS40NywwQzI0Ljg0LDAsMCwyNC44NCwwLDU1LjQ3czI0Ljg0LDU1LjQ3LDU1LjQ3LDU1LjQ3LDU1LjQ3LTI0Ljg0LDU1LjQ3LTU1LjQ3Uzg2LjExLDAsNTUuNDcsMFptOS4zMiw5NC40OWgtMTAuOWw5LjQ1LTQ3LjE1aDEwLjlsLTkuNDUsNDcuMTVabTIxLjQ3LTUzLjk4aC0yOC45NGwtNy42OCwzOC4yNWgtMTAuOWw3LjY4LTM4LjI1aC0yNC41OGwxLjg2LTEwLjI0aDY0LjQybC0xLjg2LDEwLjI0WiIvPgogIDxnPgogICAgPHBhdGggY2xhc3M9ImNscy0xIiBkPSJtMjg3LjEsMzAuMDhoLTkuMTRjLTMuNzEsNS42MS05LjIzLDcuODYtMTguMDYsNy44NmwtMS44MSw5LjE2aDIuNjljNC43LDAsOS4zNi0uMTgsMTIuMDItMi44OWwtNS41OCwyNy43MWgtMTQuMjZsLTEuODQsOS4yNGgzOS42NWwxLjktOS4yNGgtMTMuOTlsOC40NC00MS44NVoiLz4KICAgIDxwb2x5Z29uIGNsYXNzPSJjbHMtMSIgcG9pbnRzPSIxNTIuMDkgODEuMTcgMTYzLjU4IDgxLjE3IDE3MS44MyAzOS44NyAxNjAuMzMgMzkuODcgMTUyLjA5IDgxLjE3Ii8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Im0xNDAuNzIsNzEuNDNjLS43OC0uNzItMS4xNi0xLjg2LTEuMTYtMy40MSwwLS43Mi4wOC0xLjU4LjI1LTIuNThsMy4zMy0xNi40MWg5LjkxbDEuNzUtOS4xNmgtOS44M2wxLjkyLTkuNzRoLTExLjQ5bC0xLjkxLDkuNzRoLTUuNThsLTEuODMsOS4xNmg1LjU4bC0zLjQxLDE3LjA3Yy0uNDQsMi4zMy0uNjcsNC4yNS0uNjcsNS43NSwwLDMuNTUuOTcsNi4xMiwyLjkyLDcuNywxLjk0LDEuNTgsNSwyLjM3LDkuMTYsMi4zNywyLjExLDAsNC4zNi0uMjIsNi43NS0uNjdsMS45Mi05LjMzYy0xLjY3LjM5LTMsLjU4LTQsLjU4LTEuNjEsMC0yLjgtLjM2LTMuNTgtMS4wOFoiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0ibTE3NC45MywzMC40NWMuNjQtMS4wNC45Ni0yLjIuOTYtMy40OHMtLjMyLTIuNDYtLjk2LTMuNTNjLS42NC0xLjA3LTEuNS0xLjkxLTIuNTctMi41Mi0xLjA3LS42MS0yLjI4LS45Mi0zLjYyLS45MnMtMi41Ny4zMS0zLjY2LjkyYy0xLjEuNjEtMS45NiwxLjQ1LTIuNTcsMi41Mi0uNjEsMS4wNy0uOTIsMi4yNC0uOTIsMy41M3MuMywyLjQ0LjkyLDMuNDhjLjYxLDEuMDQsMS40NywxLjg2LDIuNTcsMi40NywxLjEuNjEsMi4zMi45MiwzLjY3LjkyczIuNTUtLjMsMy42Mi0uOTJjMS4wNy0uNjEsMS45Mi0xLjQ0LDIuNTctMi40N1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0ibTIwNi43Niw0MC44MmMtMi42OS0xLjM2LTUuODctMi4wNC05LjU0LTIuMDQtNC43MiwwLTguODYsMS4xMS0xMi40MSwzLjMzLTMuNTUsMi4yMi02LjMsNS4yNi04LjI1LDkuMTItMS45NCwzLjg2LTIuOTEsOC4xNS0yLjkxLDEyLjg3LDAsNS41NSwxLjU3LDkuOTUsNC43LDEzLjIsMy4xNCwzLjI1LDcuODcsNC44NywxNC4yLDQuODcsMy4yNywwLDYuMzQtLjU0LDkuMi0xLjYyLDIuODYtMS4wOCw1LjMtMi42NSw3LjMzLTQuNzEsMi4wMy0yLjA1LDMuNTEtNC41Miw0LjQ1LTcuNDFoLTEyLjA3Yy0xLjU2LDMuMzMtNC4zLDUtOC4yNSw1LTIuNzgsMC00Ljc5LS44LTYuMDQtMi40MS0xLjI1LTEuNjEtMS44Ny0zLjg5LTEuODctNi44M3YtLjkyaDI5LjMyYy40NC0yLjM5LjY3LTQuNTguNjctNi41OCwwLTMuODMtLjc1LTcuMDktMi4yNS05Ljc5LTEuNS0yLjY5LTMuNi00LjcyLTYuMjktNi4wOFptLTIuNzksMTUuMjhoLTE3LjQ5Yy44My0yLjY2LDIuMDktNC44LDMuNzktNi40MSwxLjY5LTEuNjEsMy43OS0yLjQxLDYuMjktMi40MSw0Ljk0LDAsNy40MSwyLjg5LDcuNDEsOC42NnYuMTdaIi8+CiAgICA8cGF0aCBjbGFzcz0iY2xzLTEiIGQ9Im0yMzUuMjgsNDUuMTFsMS4wOC01LjI1aC0xMC45OWwtOC4yNSw0MS4zMWgxMS40OWwzLjgzLTE5LjE1Yy44My00LjA1LDIuMzMtNy4xNSw0LjUtOS4yOSwyLjE2LTIuMTQsNC45NC0zLjIxLDguMzMtMy4yMS42NywwLDEuMzMuMDQsMiwuMTMuNjcuMDgsMS4yNS4xOCwxLjc1LjI5bDIuMDgtMTAuMTZjLTEuNDQtLjMzLTIuOC0uNS00LjA4LS41LTQuNzcsMC04LjY5LDEuOTQtMTEuNzQsNS44M1oiLz4KICAgIDxwYXRoIGNsYXNzPSJjbHMtMSIgZD0ibTM1NS42Nyw0My43NWMyLjM2LDMuMjgsMy41NCw3LjY2LDMuNTQsMTMuMTYsMCw0LjQ0LS44Nyw4LjYxLTIuNjIsMTIuNDktMS43NSwzLjg5LTQuMjIsNy00LjQxLDkuMzMtMy4xOSwyLjMzLTYuODQsMy41LTEwLjk1LDMuNS0zLDAtNS40OC0uNTYtNy40NS0xLjY3LTEuOTctMS4xMS0zLjQzLTIuODMtNC4zNy01LjE2bC00LjUsMjIuNDloLTExLjQ5bDExLjU4LTU3Ljk2aDExLjI0bC0uODMsNC4xNmMzLjI3LTMuNSw3LjM4LTUuMjUsMTIuMzItNS4yNXM4LjU5LDEuNjQsMTAuOTUsNC45MVptLTEzLjYyLDI2Ljc3YzEuNjctMS4zNiwyLjkxLTMuMTYsMy43NS01LjQxLjgzLTIuMjUsMS4yNS00LjcxLDEuMjUtNy4zNywwLTYuMTYtMi40Mi05LjI0LTcuMjUtOS4yNC0yLjYxLDAtNC43OC44Mi02LjUsMi40Ni0xLjcyLDEuNjQtMi44OSwzLjk4LTMuNSw3LjA0LS4zOSwxLjcyLS42NywzLjE0LS44Myw0LjI1LS4xNywxLjExLS4yNSwxLjk3LS4yNSwyLjU4LDAsMi41LjYxLDQuNDEsMS44Myw1Ljc1LDEuMjIsMS4zMywzLjAyLDIsNS40MSwyLDIuMzksMCw0LjQxLS42OCw2LjA4LTIuMDRaIi8+CiAgPC9nPgo8L3N2Zz4=" alt="Tier 1 Professionals">
+    </a>
+    <span class="header-divider">|</span>
+    <div class="header-centre">
+      <div class="doc-title-header">QA Review Manager</div>
+      <div class="version-tag">v2.0 — SharePoint Live</div>
+    </div>
+    <span class="header-divider">|</span>
+    <div class="header-right">
+      <div id="sync-status"><span id="sync-dot"></span><span id="sync-msg">Connecting…</span></div>
+      <span class="header-divider" style="font-size:16px">|</span>
+      <label>User:</label>
+      <span id="current-user-display" title="Signed in via Microsoft">—</span>
+      <button class="btn btn-ghost btn-sm" onclick="refreshData()" title="Refresh from SharePoint" style="color:#fff;border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.08)">↻ Refresh</button>
+    </div>
+  </div>
+
+  <div id="tabs">
+    <button class="tab-btn active" onclick="showTab('dashboard')">Dashboard</button>
+    <button class="tab-btn hero" onclick="showTab('queue')">Unassigned</button>
+    <button class="tab-btn" onclick="showTab('register')">Register</button>
+    <button class="tab-btn" onclick="showTab('team')">Team</button>
+  </div>
+
+  <div id="main">
+    <!-- Dashboard -->
+    <div id="tab-dashboard" class="tab-content">
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi"><div class="val">—</div><div class="lbl">Total Open</div></div>
+        <div class="kpi kpi-unassigned"><div class="val">—</div><div class="lbl">Unassigned</div></div>
+        <div class="kpi kpi-overdue"><div class="val">—</div><div class="lbl">Overdue</div></div>
+        <div class="kpi kpi-closed"><div class="val">—</div><div class="lbl">Closed This Month</div></div>
+      </div>
+      <div class="card" style="margin-bottom:16px"><div class="card-title">QA Performance — Last 12 Weeks</div><svg id="chart-perf" width="100%" height="220"></svg></div>
+      <div class="charts-grid">
+        <div class="card"><div class="card-title">Open Items by Client</div><svg id="chart-client" width="100%" height="180"></svg></div>
+        <div class="card"><div class="card-title">Open Items by Document Type</div><svg id="chart-type" width="100%" height="180"></svg></div>
+      </div>
+      <div class="card"><div class="card-title">Workload by Project / Scope</div><div id="workload-bars"></div></div>
+    </div>
+
+    <!-- Queue -->
+    <div id="tab-queue" class="tab-content" style="display:none">
+      <div id="queue-hero">
+        <h2>Unassigned QA Queue</h2>
+        <p>Items below need a Reviewer and/or Approver. Pick the role you want to take on.</p>
+      </div>
+      <div id="queue-list"></div>
+    </div>
+
+    <!-- Register -->
+    <div id="tab-register" class="tab-content" style="display:none">
+      <div class="action-bar">
+        <button class="btn btn-amber" onclick="openModal()">+ New QA Item</button>
+        <button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ CSV Export</button>
+        <button class="btn btn-ghost btn-sm" onclick="window.print()">🖨 Print</button>
+      </div>
+      <div class="filter-bar">
+        <div><label>Status</label><br><select id="f-status" onchange="renderRegister()"><option value="">All</option><option>Open – Unassigned</option><option>Open – In Progress</option><option>In Review</option><option>Closed – Approved</option><option>Closed – Rejected</option></select></div>
+        <div><label>Client</label><br><select id="f-client" onchange="renderRegister()"><option value="">All</option></select></div>
+        <div><label>Project</label><br><select id="f-project" onchange="renderRegister()"><option value="">All</option></select></div>
+        <div><label>Assignee</label><br><select id="f-assignee" onchange="renderRegister()"><option value="">All</option></select></div>
+        <div><label>Priority</label><br><select id="f-priority" onchange="renderRegister()"><option value="">All</option><option>High</option><option>Medium</option><option>Low</option></select></div>
+        <div><label>Due From</label><br><input type="date" id="f-due-from" onchange="renderRegister()"></div>
+        <div><label>Due To</label><br><input type="date" id="f-due-to" onchange="renderRegister()"></div>
+        <div><label>Search</label><br><input type="text" id="f-search" placeholder="Doc#, title, notes…" oninput="renderRegister()"></div>
+        <div style="align-self:flex-end"><button class="btn btn-ghost btn-sm" onclick="clearFilters()">Clear</button></div>
+      </div>
+      <div id="bulk-bar" class="bulk-bar">
+        <span id="bulk-count" style="color:#fff;font-size:12px;font-weight:600"></span>
+        <select id="bulk-status">
+          <option value="">Set status…</option>
+          <option>Open – Unassigned</option><option>Open – In Progress</option><option>In Review</option><option>Closed – Approved</option><option>Closed – Rejected</option>
+        </select>
+        <button class="btn btn-gold btn-sm" onclick="applyBulkStatus()">Apply</button>
+        <button class="btn btn-ghost btn-sm" onclick="clearSelection()">Clear</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:30px"><input type="checkbox" id="chk-all" onchange="toggleSelectAll(this)"></th>
+              <th data-col="projectCode" onclick="sortBy('projectCode')">Project / Client</th>
+              <th data-col="scope" onclick="sortBy('scope')">Scope</th>
+              <th data-col="docNumber" onclick="sortBy('docNumber')">Doc Number</th>
+              <th data-col="docTitle" onclick="sortBy('docTitle')">Title</th>
+              <th data-col="docType" onclick="sortBy('docType')">Type</th>
+              <th data-col="revision" onclick="sortBy('revision')">Rev</th>
+              <th data-col="status" onclick="sortBy('status')">Status</th>
+              <th data-col="priority" onclick="sortBy('priority')">Pri</th>
+              <th data-col="reviewer" onclick="sortBy('reviewer')">Reviewer</th>
+              <th data-col="approver" onclick="sortBy('approver')">Approver</th>
+              <th data-col="dueDate" onclick="sortBy('dueDate')">Due Date</th>
+              <th>RPEQ</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="reg-tbody"><tr><td colspan="14" style="text-align:center;padding:30px;color:#666">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Team -->
+    <div id="tab-team" class="tab-content" style="display:none">
+      <div class="action-bar">
+        <input type="text" id="new-member" placeholder="Add team member name…" style="padding:6px 10px;border:1px solid #D9D9D9;border-radius:4px;font-size:12px;font-family:inherit">
+        <button class="btn btn-amber btn-sm" onclick="addTeamMember()">+ Add</button>
+      </div>
+      <div class="team-grid" id="team-grid"></div>
+    </div>
+  </div>
+
+  <div id="footer">QA Review Manager — <span>Tier 1 Professionals</span> — v2.0 SharePoint Live — <span>Internal use only</span></div>
+</div>
+
+<!-- Modal -->
+<div id="modal-bg" onclick="if(event.target===this)closeModal()">
+  <div id="modal">
+    <h2 id="modal-title">New QA Item</h2>
+    <div class="form-grid">
+      <div class="form-group"><label>Project Code *</label><input id="f-projectCode" placeholder="01055" maxlength="5"><div class="form-err" id="e-projectCode"></div></div>
+      <div class="form-group"><label>Client</label><input id="f-client-inp" placeholder="Santos"></div>
+      <div class="form-group"><label>Scope / Discipline</label><input id="f-scope" placeholder="Pipeline Tie-in"></div>
+      <div class="form-group full"><label>Project Folder URL</label><input id="f-folderUrl" placeholder="https://t1professionals.sharepoint.com/…"></div>
+      <div class="form-group"><label>Doc Number *</label><input id="f-docNumber" placeholder="T1P-01055-CALC-001"><div class="form-err" id="e-docNumber"></div></div>
+      <div class="form-group full"><label>Document Title *</label><input id="f-docTitle" placeholder="Pipeline Wall Thickness Calculation"><div class="form-err" id="e-docTitle"></div></div>
+      <div class="form-group"><label>Doc Type</label><select id="f-docType"><option>Calculation</option><option>Drawing</option><option>Report</option><option>Specification</option><option>Procedure</option><option>Other</option></select></div>
+      <div class="form-group"><label>Revision</label><input id="f-revision" placeholder="A"></div>
+      <div class="form-group"><label>Originator</label><select id="f-originator"><option value=""></option></select></div>
+      <div class="form-group"><label>Reviewer <span style="color:#666;font-weight:400">(Draft Checker for drawings)</span></label><select id="f-reviewer-inp"><option value="">Unassigned</option></select></div>
+      <div class="form-group"><label>Approver <span style="color:#666;font-weight:400">(Eng Checker / RPEQ)</span></label><select id="f-approver-inp"><option value="">Unassigned</option></select></div>
+      <div class="form-group"><label>Due Date *</label><input type="date" id="f-dueDate"><div class="form-err" id="e-dueDate"></div></div>
+      <div class="form-group"><label>Status</label><select id="f-status-inp"><option>Open – Unassigned</option><option>Open – In Progress</option><option>In Review</option><option>Closed – Approved</option><option>Closed – Rejected</option></select></div>
+      <div class="form-group"><label>Priority</label><select id="f-priority-inp"><option>High</option><option>Medium</option><option>Low</option></select></div>
+      <div class="form-group full"><label>Notes</label><textarea id="f-notes" placeholder="Additional context, references, review comments…"></textarea></div>
+      <div class="form-group"><label style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="f-rpeq"> RPEQ Signoff Required</label></div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-amber" id="save-btn" onclick="saveItem()">Save Item</button>
+    </div>
+  </div>
+</div>
+
+<!-- MSAL for Microsoft Auth -->
+<script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+
+<script>
+// ─────────────────────────────────────────────────────────────────────────────
+// CONFIG — update CLIENT_ID after registering the app in Azure AD
+// ─────────────────────────────────────────────────────────────────────────────
+const CONFIG = {
+  CLIENT_ID: 'YOUR_AZURE_APP_CLIENT_ID',   // ← replace after Azure AD app registration
+  TENANT_ID: '3a9e8693-abaa-4a6c-8c5c-df05a11a2bb7',
+  SITE_ID:   't1professionals.sharepoint.com,5a127889-31e3-4737-9f12-43f311ba6eb9,ac4b4bf6-7dca-49bc-96ca-e678679a19d4',
+  LIST_NAME: 'T1P QA Register',
+  SITE_URL:  'https://t1professionals.sharepoint.com/sites/T1-Projects',
+  SCOPES:    ['Sites.ReadWrite.All'],
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MSAL setup
+// ─────────────────────────────────────────────────────────────────────────────
+const msalConfig = {
+  auth: {
+    clientId: CONFIG.CLIENT_ID,
+    authority: `https://login.microsoftonline.com/${CONFIG.TENANT_ID}`,
+    redirectUri: window.location.href.split('?')[0],
+  },
+  cache: { cacheLocation: 'sessionStorage' }
+};
+const msalInstance = new msal.PublicClientApplication(msalConfig);
+
+let accessToken = null;
+let currentUser = '';
+let items = [];
+let team = [
+  "Alex Leigh","Callum McLauchlan","David Sloan","Fraser McVeigh",
+  "Jamie Williams","Laing Goostrey","Matthew Tattersall","Michael Grabowski",
+  "Ravi Naidu","Sam Kennedy","Sasha Murphy","Sayumi Hasara Silva",
+  "Trevor Ibell","Uttara Hingu"
+];
+let sortCol = 'DueDate';
+let sortDir = 1;
+let selectedIds = new Set();
+let editingId = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AUTH
+// ─────────────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    await msalInstance.initialize();
+    const resp = await msalInstance.handleRedirectPromise();
+    if (resp) {
+      accessToken = resp.accessToken;
+      currentUser = resp.account.name;
+    } else {
+      const accounts = msalInstance.getAllAccounts();
+      if (accounts.length > 0) {
+        const tokenResp = await msalInstance.acquireTokenSilent({
+          scopes: CONFIG.SCOPES,
+          account: accounts[0]
+        });
+        accessToken = tokenResp.accessToken;
+        currentUser = accounts[0].name;
+      } else {
+        showAuth();
+        return;
+      }
+    }
+    document.getElementById('current-user-display').textContent = currentUser;
+    document.getElementById('auth-panel').classList.add('hidden');
+    await refreshData();
+  } catch(e) {
+    console.error('Auth error:', e);
+    showAuth();
+  }
+}
+
+function showAuth() {
+  document.getElementById('loading-overlay').classList.add('hidden');
+  document.getElementById('auth-panel').classList.remove('hidden');
+}
+
+async function signIn() {
+  try {
+    await msalInstance.loginRedirect({ scopes: CONFIG.SCOPES });
+  } catch(e) {
+    console.error('Sign in error:', e);
+    alert('Sign in failed. Please try again.');
+  }
+}
+
+async function getToken() {
+  const accounts = msalInstance.getAllAccounts();
+  if (!accounts.length) { showAuth(); return null; }
+  try {
+    const resp = await msalInstance.acquireTokenSilent({ scopes: CONFIG.SCOPES, account: accounts[0] });
+    return resp.accessToken;
+  } catch {
+    await msalInstance.acquireTokenRedirect({ scopes: CONFIG.SCOPES });
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GRAPH API helpers
+// ─────────────────────────────────────────────────────────────────────────────
+const GRAPH = 'https://graph.microsoft.com/v1.0';
+
+async function graphGet(url) {
+  const token = await getToken();
+  const resp = await fetch(GRAPH + url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!resp.ok) throw new Error(`Graph GET ${url} failed: ${resp.status}`);
+  return resp.json();
+}
+
+async function graphPost(url, body) {
+  const token = await getToken();
+  const resp = await fetch(GRAPH + url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!resp.ok) throw new Error(`Graph POST ${url} failed: ${resp.status} ${await resp.text()}`);
+  return resp.json();
+}
+
+async function graphPatch(url, body) {
+  const token = await getToken();
+  const resp = await fetch(GRAPH + url, {
+    method: 'PATCH',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!resp.ok) throw new Error(`Graph PATCH ${url} failed: ${resp.status} ${await resp.text()}`);
+  return resp.json();
+}
+
+async function graphDelete(url) {
+  const token = await getToken();
+  const resp = await fetch(GRAPH + url, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!resp.ok) throw new Error(`Graph DELETE ${url} failed: ${resp.status}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LIST ID cache
+// ─────────────────────────────────────────────────────────────────────────────
+let _listId = null;
+async function getListId() {
+  if (_listId) return _listId;
+  const data = await graphGet(`/sites/${CONFIG.SITE_ID}/lists?$filter=displayName eq '${CONFIG.LIST_NAME}'`);
+  if (!data.value.length) throw new Error(`List "${CONFIG.LIST_NAME}" not found`);
+  _listId = data.value[0].id;
+  return _listId;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DATA — fetch all items from SharePoint List
+// ─────────────────────────────────────────────────────────────────────────────
+function spToLocal(fields) {
+  return {
+    id: String(fields.id),
+    spId: fields.id,
+    projectCode: fields.ProjectCode || '',
+    client:      fields.Client || '',
+    scope:       fields.Scope || '',
+    folderUrl:   fields.FolderUrl || '',
+    fileUrl:     fields.FileUrl || '',
+    docNumber:   fields.Title || '',
+    docTitle:    fields.DocTitle || '',
+    docType:     fields.DocType || 'Other',
+    revision:    fields.Revision || '',
+    originator:  fields.Originator || '',
+    reviewer:    fields.Reviewer || '',
+    approver:    fields.Approver || '',
+    dueDate:     fields.DueDate ? fields.DueDate.slice(0,10) : '',
+    status:      fields.Status || 'Open – Unassigned',
+    priority:    fields.Priority || 'Medium',
+    notes:       fields.Notes || '',
+    rpeq:        !!fields.RPEQ,
+    closedAt:    fields.ClosedAt || null,
+  };
+}
+
+function localToSp(item) {
+  return {
+    fields: {
+      Title:       item.docNumber,
+      DocTitle:    item.docTitle,
+      ProjectCode: item.projectCode,
+      Client:      item.client,
+      Scope:       item.scope,
+      FolderUrl:   item.folderUrl,
+      FileUrl:     item.fileUrl || '',
+      DocType:     item.docType,
+      Revision:    item.revision,
+      Originator:  item.originator,
+      Reviewer:    item.reviewer,
+      Approver:    item.approver,
+      DueDate:     item.dueDate ? item.dueDate + 'T00:00:00Z' : null,
+      Status:      item.status,
+      Priority:    item.priority,
+      Notes:       item.notes,
+      RPEQ:        item.rpeq,
+      ClosedAt:    item.closedAt || null,
+    }
+  };
+}
+
+async function fetchItems() {
+  const listId = await getListId();
+  let url = `/sites/${CONFIG.SITE_ID}/lists/${listId}/items?$expand=fields&$top=999`;
+  let all = [];
+  while (url) {
+    const data = await graphGet(url.replace(GRAPH, ''));
+    all = all.concat(data.value.map(i => spToLocal(i.fields)));
+    url = data['@odata.nextLink'] || null;
+  }
+  return all;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SYNC STATUS
+// ─────────────────────────────────────────────────────────────────────────────
+function setSyncStatus(state, msg) {
+  const dot = document.getElementById('sync-dot');
+  const msgEl = document.getElementById('sync-msg');
+  dot.className = state;
+  msgEl.textContent = msg;
+}
+
+async function refreshData() {
+  setSyncStatus('syncing', 'Syncing…');
+  document.getElementById('loading-overlay').classList.remove('hidden');
+  document.getElementById('loading-msg').textContent = 'Loading from SharePoint…';
+  try {
+    items = await fetchItems();
+    setSyncStatus('synced', `Synced — ${items.length} items`);
+    renderAll();
+  } catch(e) {
+    console.error('Fetch error:', e);
+    setSyncStatus('error', 'Sync error — check console');
+    alert('Failed to load data from SharePoint. Check your connection and try refreshing.\n\n' + e.message);
+  } finally {
+    document.getElementById('loading-overlay').classList.add('hidden');
+  }
+}
+
+function renderAll() {
+  if (activeTab === 'dashboard') renderDashboard();
+  if (activeTab === 'queue') renderQueue();
+  if (activeTab === 'register') renderRegister();
+  if (activeTab === 'team') renderTeam();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CRUD
+// ─────────────────────────────────────────────────────────────────────────────
+async function createItem(item) {
+  const listId = await getListId();
+  const body = localToSp(item);
+  return graphPost(`/sites/${CONFIG.SITE_ID}/lists/${listId}/items`, body);
+}
+
+async function updateItem(spId, fields) {
+  const listId = await getListId();
+  return graphPatch(`/sites/${CONFIG.SITE_ID}/lists/${listId}/items/${spId}/fields`, fields);
+}
+
+async function deleteItemSp(spId) {
+  const listId = await getListId();
+  return graphDelete(`/sites/${CONFIG.SITE_ID}/lists/${listId}/items/${spId}`);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────────────────────────────────────
+const today = () => new Date().toISOString().slice(0,10);
+const diffDays = (d) => { const t=new Date(today()), o=new Date(d); return Math.round((o-t)/864e5); };
+const fmtDate = (d) => { if(!d)return '—'; const [y,m,dy]=d.split('-'); return `${dy}/${m}/${y}`; };
+
+function statusBadge(s) {
+  const map = {'Open – Unassigned':'badge-grey','Open – In Progress':'badge-amber','In Review':'badge-blue','Closed – Approved':'badge-green','Closed – Rejected':'badge-red'};
+  return `<span class="badge ${map[s]||'badge-grey'}">${s}</span>`;
+}
+function priBadge(p) {
+  const map = {'High':'badge-pri-high','Medium':'badge-pri-med','Low':'badge-pri-low'};
+  return `<span class="badge ${map[p]||'badge-pri-low'}">${p||'Medium'}</span>`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TABS
+// ─────────────────────────────────────────────────────────────────────────────
+let activeTab = 'dashboard';
+function showTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el => el.style.display='none');
+  document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-'+name).style.display='';
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    if (btn.getAttribute('onclick') === `showTab('${name}')`) btn.classList.add('active');
+  });
+  activeTab = name;
+  renderAll();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// DASHBOARD
+// ─────────────────────────────────────────────────────────────────────────────
+function renderDashboard() {
+  const open = items.filter(i => !i.status.startsWith('Closed'));
+  const unassigned = items.filter(i => (!i.reviewer || !i.approver) && !i.status.startsWith('Closed'));
+  const now = today();
+  const overdue = open.filter(i => i.dueDate && i.dueDate < now);
+  const thisMonth = (() => { const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; })();
+  const closedMonth = items.filter(i => i.status==='Closed – Approved' && i.closedAt && i.closedAt.startsWith(thisMonth));
+
+  const kpi = document.getElementById('kpi-grid');
+  kpi.innerHTML = [
+    {val:open.length,lbl:'Total Open',cls:''},
+    {val:unassigned.length,lbl:'Unassigned',cls:'kpi-unassigned'},
+    {val:overdue.length,lbl:'Overdue',cls:'kpi-overdue'},
+    {val:closedMonth.length,lbl:'Closed This Month',cls:'kpi-closed'},
+  ].map(k=>`<div class="kpi ${k.cls}"><div class="val">${k.val}</div><div class="lbl">${k.lbl}</div></div>`).join('');
+
+  function svgBar(svgEl, data, colourFn) {
+    const W=svgEl.clientWidth||400, H=180, pad={l:14,r:10,t:10,b:64}, bH=H-pad.t-pad.b;
+    if(!data.length){svgEl.innerHTML='<text x="50%" y="50%" text-anchor="middle" fill="#666" font-size="12">No data</text>';return;}
+    const max=Math.max(...data.map(d=>d.v),1);
+    const bW=Math.min(40,(W-pad.l-pad.r)/data.length-4);
+    let svg='';
+    data.forEach((d,i)=>{
+      const x=pad.l+(W-pad.l-pad.r)/data.length*i+(W-pad.l-pad.r)/data.length/2-bW/2;
+      const bh=Math.max(2,(d.v/max)*bH);
+      const y=pad.t+bH-bh;
+      svg+=`<rect x="${x}" y="${y}" width="${bW}" height="${bh}" fill="${colourFn(i)}" rx="2"/>`;
+      svg+=`<text x="${x+bW/2}" y="${y-3}" text-anchor="middle" fill="#1D2251" font-size="10" font-weight="700">${d.v}</text>`;
+      svg+=`<text x="${x+bW/2}" y="${H-pad.b+12}" text-anchor="end" fill="#1A1A1A" font-size="10" transform="rotate(-25 ${x+bW/2} ${H-pad.b+12})">${d.k}</text>`;
+    });
+    svg+=`<line x1="${pad.l}" y1="${pad.t+bH}" x2="${W-pad.r}" y2="${pad.t+bH}" stroke="#1A1A1A" stroke-width="1"/>`;
+    svgEl.innerHTML=svg;
+  }
+
+  const colours=['#1D2251','#3D4480','#5C63A8','#2E7D32','#C9A14A'];
+  setTimeout(()=>{
+    const byClient={};
+    open.forEach(i=>{byClient[i.client]=(byClient[i.client]||0)+1});
+    svgBar(document.getElementById('chart-client'), Object.entries(byClient).map(([k,v])=>({k,v})), i=>colours[i%colours.length]);
+    const byType={};
+    open.forEach(i=>{byType[i.docType]=(byType[i.docType]||0)+1});
+    svgBar(document.getElementById('chart-type'), Object.entries(byType).map(([k,v])=>({k,v})), i=>colours[(i+2)%colours.length]);
+  },50);
+
+  const byScope={};
+  items.forEach(i=>{
+    const k=`${i.projectCode} — ${i.scope||'(No Scope)'}`;
+    if(!byScope[k])byScope[k]={open:0,closed:0};
+    if(i.status.startsWith('Closed'))byScope[k].closed++; else byScope[k].open++;
+  });
+  document.getElementById('workload-bars').innerHTML=Object.entries(byScope).map(([k,{open:o,closed:c}])=>{
+    const total=o+c||1;
+    return `<div class="wl-row"><div class="wl-label" title="${k}">${k}</div><div class="wl-bar-wrap"><div class="wl-bar-open" style="width:${(o/total*100).toFixed(0)}%"></div><div class="wl-bar-closed" style="width:${(c/total*100).toFixed(0)}%"></div></div><div class="wl-count">${o} open / ${c} closed</div></div>`;
+  }).join('');
+
+  // Perf chart
+  setTimeout(()=>{
+    const svgEl=document.getElementById('chart-perf');
+    if(!svgEl)return;
+    const W=svgEl.clientWidth||800,H=220,pad={l:42,r:14,t:14,b:46};
+    const weeks=12; const now2=new Date(); now2.setHours(0,0,0,0);
+    const day=now2.getDay(); const monday=new Date(now2); monday.setDate(now2.getDate()-(day+6)%7);
+    const bins=[];
+    for(let w=weeks-1;w>=0;w--){
+      const start=new Date(monday); start.setDate(monday.getDate()-w*7);
+      const end=new Date(start); end.setDate(start.getDate()+7);
+      bins.push({start,end,opened:0,closed:0,label:`${String(start.getDate()).padStart(2,'0')}/${String(start.getMonth()+1).padStart(2,'0')}`});
+    }
+    items.forEach(i=>{
+      if(i.dueDate){const op=new Date(i.dueDate);op.setDate(op.getDate()-21);bins.forEach(b=>{if(op>=b.start&&op<b.end)b.opened++;});}
+      if(i.closedAt){const c=new Date(i.closedAt);bins.forEach(b=>{if(c>=b.start&&c<b.end)b.closed++;});}
+    });
+    const maxV=Math.max(1,...bins.map(b=>Math.max(b.opened,b.closed)));
+    const innerW=W-pad.l-pad.r,innerH=H-pad.t-pad.b;
+    const groupW=innerW/weeks,barW=Math.max(4,(groupW-4)/2);
+    let svg='';
+    for(let g=0;g<=4;g++){const y=pad.t+innerH-(g/4)*innerH;svg+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#E8E8E8" stroke-width="1"/><text x="${pad.l-6}" y="${y+3}" text-anchor="end" fill="#666" font-size="10">${Math.round((g/4)*maxV)}</text>`;}
+    bins.forEach((b,i)=>{
+      const gx=pad.l+i*groupW+2;
+      svg+=`<rect x="${gx}" y="${pad.t+innerH-(b.opened/maxV)*innerH}" width="${barW}" height="${(b.opened/maxV)*innerH}" fill="#1D2251" rx="1"/>`;
+      svg+=`<rect x="${gx+barW+2}" y="${pad.t+innerH-(b.closed/maxV)*innerH}" width="${barW}" height="${(b.closed/maxV)*innerH}" fill="#2E7D32" rx="1"/>`;
+      if(i%2===0)svg+=`<text x="${gx+barW}" y="${H-26}" text-anchor="middle" fill="#1A1A1A" font-size="10">${b.label}</text>`;
+    });
+    svg+=`<line x1="${pad.l}" y1="${pad.t+innerH}" x2="${W-pad.r}" y2="${pad.t+innerH}" stroke="#1A1A1A" stroke-width="1"/>`;
+    svg+=`<rect x="${pad.l}" y="${H-14}" width="10" height="10" fill="#1D2251"/><text x="${pad.l+14}" y="${H-5}" fill="#1A1A1A" font-size="11">Opened</text>`;
+    svg+=`<rect x="${pad.l+78}" y="${H-14}" width="10" height="10" fill="#2E7D32"/><text x="${pad.l+92}" y="${H-5}" fill="#1A1A1A" font-size="11">Closed</text>`;
+    svgEl.innerHTML=svg;
+  },60);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// QUEUE
+// ─────────────────────────────────────────────────────────────────────────────
+function renderQueue() {
+  const unassigned = items.filter(i => (!i.reviewer || !i.approver) && !i.status.startsWith('Closed'));
+  const el = document.getElementById('queue-list');
+  if (!unassigned.length) { el.innerHTML='<div class="empty">✅ No unassigned items — queue is clear.</div>'; return; }
+  el.innerHTML = unassigned.sort((a,b)=>(a.dueDate||'').localeCompare(b.dueDate||'')).map(i=>{
+    const dd=diffDays(i.dueDate);
+    const dueTxt=i.dueDate?(dd<0?`<span style="color:#B71C1C;font-weight:700">Overdue by ${Math.abs(dd)} day${Math.abs(dd)!==1?'s':''}</span>`:`<span>Due in ${dd} day${dd!==1?'s':''}</span>`):'<span style="color:#666">No due date</span>';
+    return `<div class="queue-item${i.dueDate&&i.dueDate<today()?' overdue':''}">
+      <div class="qi-main">
+        <div class="qi-title">${i.docNumber} — ${i.docTitle}</div>
+        <div class="qi-meta"><strong>${i.projectCode}</strong> · ${i.client} · ${i.scope} · ${i.docType} ${i.rpeq?'· <span class="rpeq-flag">RPEQ</span>':''} · ${dueTxt} · ${priBadge(i.priority)}${i.folderUrl?` · <a href="${i.folderUrl}" target="_blank" rel="noopener" style="color:#1D2251;font-weight:600;text-decoration:underline">📁 Folder</a>`:''}</div>
+        <div class="qi-meta" style="margin-top:6px"><strong>Originator:</strong> ${i.originator||'—'} · <strong>Reviewer:</strong> <span style="color:${i.reviewer?'#1D2251':'#B71C1C'};font-weight:${i.reviewer?'600':'700'}">${i.reviewer||'Unassigned ⚠'}</span> · <strong>Approver${i.rpeq?' (RPEQ)':''}:</strong> <span style="color:${i.approver?'#1D2251':'#B71C1C'};font-weight:${i.approver?'600':'700'}">${i.approver||'Unassigned ⚠'}</span></div>
+        ${i.notes?`<div style="font-size:11px;color:#666;margin-top:4px;font-style:italic">${i.notes}</div>`:''}
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:stretch;min-width:170px">
+        ${!i.reviewer?`<button class="btn btn-amber btn-sm" onclick="takeItem('${i.id}','reviewer')">✋ Take as Reviewer</button>`:''}
+        ${!i.approver?`<button class="btn btn-gold btn-sm" onclick="takeItem('${i.id}','approver')">✋ Take as Approver${i.rpeq?' (RPEQ)':''}</button>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function takeItem(id, role) {
+  if (!currentUser) { alert('No user identified — please sign in.'); return; }
+  const item = items.find(i => i.id===id);
+  if (!item || item[role]) return;
+  const from = item[role];
+  item[role] = currentUser;
+  if (item.status==='Open – Unassigned' && item.reviewer) item.status='Open – In Progress';
+  setSyncStatus('syncing', 'Saving…');
+  try {
+    const fields = { [role==='reviewer'?'Reviewer':'Approver']: currentUser };
+    if (item.status!==from) fields.Status = item.status;
+    await updateItem(item.spId, fields);
+    setSyncStatus('synced', 'Saved');
+    renderAll();
+  } catch(e) {
+    console.error(e);
+    setSyncStatus('error', 'Save failed');
+    item[role] = from;
+    alert('Failed to save. Please try again.');
+    renderAll();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REGISTER
+// ─────────────────────────────────────────────────────────────────────────────
+function populateFilterDropdowns() {
+  const clients=[...new Set(items.map(i=>i.client).filter(Boolean))].sort();
+  const projects=[...new Set(items.map(i=>i.projectCode).filter(Boolean))].sort();
+  const assignees=[...new Set([...items.map(i=>i.reviewer),...items.map(i=>i.approver)].filter(Boolean))].sort();
+  const fc=document.getElementById('f-client'),fp=document.getElementById('f-project'),fa=document.getElementById('f-assignee');
+  const cv=fc.value,pv=fp.value,av=fa.value;
+  fc.innerHTML='<option value="">All</option>'+clients.map(c=>`<option${c===cv?' selected':''}>${c}</option>`).join('');
+  fp.innerHTML='<option value="">All</option>'+projects.map(p=>`<option${p===pv?' selected':''}>${p}</option>`).join('');
+  fa.innerHTML='<option value="">All</option>'+assignees.map(a=>`<option${a===av?' selected':''}>${a}</option>`).join('');
+}
+
+function getFiltered() {
+  const fs=document.getElementById('f-status').value;
+  const fc=document.getElementById('f-client').value;
+  const fp=document.getElementById('f-project').value;
+  const fa=document.getElementById('f-assignee').value;
+  const fpr=document.getElementById('f-priority').value;
+  const fdf=document.getElementById('f-due-from').value;
+  const fdt=document.getElementById('f-due-to').value;
+  const fq=document.getElementById('f-search').value.toLowerCase();
+  return items.filter(i=>{
+    if(fs && i.status!==fs) return false;
+    if(fc && i.client!==fc) return false;
+    if(fp && i.projectCode!==fp) return false;
+    if(fa && i.reviewer!==fa && i.approver!==fa) return false;
+    if(fpr && i.priority!==fpr) return false;
+    if(fdf && i.dueDate<fdf) return false;
+    if(fdt && i.dueDate>fdt) return false;
+    if(fq && !`${i.docNumber} ${i.docTitle} ${i.notes} ${i.scope}`.toLowerCase().includes(fq)) return false;
+    return true;
+  });
+}
+
+function getSorted(arr) {
+  const now=today();
+  return [...arr].sort((a,b)=>{
+    let av=a[sortCol]||'',bv=b[sortCol]||'';
+    if(typeof av==='boolean') av=av?1:0,bv=bv?1:0;
+    if(av<bv)return -1*sortDir; if(av>bv)return 1*sortDir; return 0;
+  });
+}
+
+function sortBy(col) {
+  if(sortCol===col)sortDir*=-1; else{sortCol=col;sortDir=1;}
+  document.querySelectorAll('th').forEach(th=>{th.classList.remove('sorted-asc','sorted-desc');if(th.dataset.col===col)th.classList.add(sortDir===1?'sorted-asc':'sorted-desc');});
+  renderRegister();
+}
+
+function renderRegister() {
+  populateFilterDropdowns();
+  const filtered=getSorted(getFiltered());
+  const now=today();
+  const tbody=document.getElementById('reg-tbody');
+  if(!filtered.length){tbody.innerHTML='<tr><td colspan="14" style="text-align:center;padding:30px;color:#666">No items match the current filters.</td></tr>';updateBulkBar();return;}
+  const teamOpts = team.map(t=>`<option>${t}</option>`).join('');
+  tbody.innerHTML=filtered.map(i=>{
+    const isOverdue=!i.status.startsWith('Closed')&&i.dueDate&&i.dueDate<now;
+    const dd=diffDays(i.dueDate);
+    const ddTxt=i.dueDate?(dd<0?`Overdue by ${Math.abs(dd)}d`:`Due in ${dd}d`):'';
+    const selChk=selectedIds.has(i.id)?'checked':'';
+    return `<tr class="${isOverdue?'overdue':''}">
+      <td><input type="checkbox" ${selChk} onchange="toggleSelect('${i.id}',this)"></td>
+      <td><span style="font-family:'SF Mono',Consolas,monospace;color:#1D2251;font-weight:700">${i.projectCode}</span>${i.folderUrl?` <a href="${i.folderUrl}" target="_blank" rel="noopener" title="Open project folder" style="font-size:13px">📁</a>`:''}<br><span style="font-size:10px;color:#666">${i.client}</span></td>
+      <td style="font-size:11px">${i.scope||'—'}</td>
+      <td style="font-family:monospace;font-size:11px">${i.fileUrl?`<a href="${i.fileUrl}" target="_blank" title="Open file">${i.docNumber}</a>`:i.docNumber}</td>
+      <td>${i.docTitle}${i.rpeq?'<br><span class="rpeq-flag" style="margin-top:2px">★ RPEQ</span>':''}</td>
+      <td style="font-size:11px">${i.docType}</td>
+      <td style="text-align:center;font-size:11px">${i.revision||'—'}</td>
+      <td><select class="inline" onchange="changeStatus('${i.id}',this.value)">${['Open – Unassigned','Open – In Progress','In Review','Closed – Approved','Closed – Rejected'].map(s=>`<option${s===i.status?' selected':''}>${s}</option>`).join('')}</select></td>
+      <td>${priBadge(i.priority)}</td>
+      <td><select class="inline" onchange="changeRole('${i.id}','reviewer',this.value)"><option value="">Unassigned</option>${teamOpts.replace(`<option>${i.reviewer}</option>`,`<option selected>${i.reviewer}</option>`)}</select></td>
+      <td><select class="inline" onchange="changeRole('${i.id}','approver',this.value)"><option value="">Unassigned</option>${teamOpts.replace(`<option>${i.approver}</option>`,`<option selected>${i.approver}</option>`)}</select></td>
+      <td class="due-cell">${fmtDate(i.dueDate)}<small>${ddTxt}</small></td>
+      <td style="text-align:center">${i.rpeq?'✔':'—'}</td>
+      <td><button class="btn btn-ghost btn-sm" onclick="openModal('${i.id}')">Edit</button> <button class="btn btn-red btn-sm" onclick="deleteItem('${i.id}')">✕</button></td>
+    </tr>`;
+  }).join('');
+  updateBulkBar();
+}
+
+async function changeStatus(id, val) {
+  const item=items.find(i=>i.id===id); if(!item)return;
+  const prev=item.status;
+  item.status=val;
+  if(val.startsWith('Closed')&&!item.closedAt)item.closedAt=new Date().toISOString();
+  else if(!val.startsWith('Closed'))item.closedAt=null;
+  setSyncStatus('syncing','Saving…');
+  try {
+    await updateItem(item.spId,{Status:val,ClosedAt:item.closedAt||null});
+    setSyncStatus('synced','Saved');
+    if(activeTab==='dashboard')renderDashboard();
+  } catch(e) {
+    console.error(e); item.status=prev; setSyncStatus('error','Save failed');
+    alert('Failed to update status. Please try again.');
+    renderRegister();
+  }
+}
+
+async function changeRole(id, role, val) {
+  const item=items.find(i=>i.id===id); if(!item)return;
+  const prev=item[role];
+  item[role]=val;
+  if(role==='reviewer'&&val&&item.status==='Open – Unassigned')item.status='Open – In Progress';
+  setSyncStatus('syncing','Saving…');
+  try {
+    const fields={[role==='reviewer'?'Reviewer':'Approver']:val};
+    if(item.status!==prev)fields.Status=item.status;
+    await updateItem(item.spId,fields);
+    setSyncStatus('synced','Saved');
+  } catch(e) {
+    console.error(e); item[role]=prev; setSyncStatus('error','Save failed');
+    alert('Failed to update. Please try again.');
+    renderRegister();
+  }
+}
+
+async function deleteItem(id) {
+  if(!confirm('Delete this QA item? This cannot be undone.'))return;
+  const item=items.find(i=>i.id===id); if(!item)return;
+  setSyncStatus('syncing','Deleting…');
+  try {
+    await deleteItemSp(item.spId);
+    items=items.filter(i=>i.id!==id);
+    selectedIds.delete(id);
+    setSyncStatus('synced','Deleted');
+    renderAll();
+  } catch(e) {
+    console.error(e); setSyncStatus('error','Delete failed');
+    alert('Failed to delete. Please try again.');
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BULK
+// ─────────────────────────────────────────────────────────────────────────────
+function toggleSelect(id,cb){if(cb.checked)selectedIds.add(id);else selectedIds.delete(id);updateBulkBar();}
+function toggleSelectAll(cb){const filtered=getFiltered();filtered.forEach(i=>{if(cb.checked)selectedIds.add(i.id);else selectedIds.delete(i.id);});renderRegister();}
+function updateBulkBar(){const bar=document.getElementById('bulk-bar'),cnt=document.getElementById('bulk-count');if(selectedIds.size>0){bar.classList.add('visible');cnt.textContent=`${selectedIds.size} item(s) selected`;}else{bar.classList.remove('visible');}}
+function clearSelection(){selectedIds.clear();renderRegister();}
+
+async function applyBulkStatus() {
+  const val=document.getElementById('bulk-status').value; if(!val)return;
+  setSyncStatus('syncing','Saving…');
+  const promises=[];
+  selectedIds.forEach(id=>{
+    const item=items.find(i=>i.id===id); if(!item)return;
+    item.status=val;
+    if(val.startsWith('Closed')&&!item.closedAt)item.closedAt=new Date().toISOString();
+    else if(!val.startsWith('Closed'))item.closedAt=null;
+    promises.push(updateItem(item.spId,{Status:val,ClosedAt:item.closedAt||null}));
+  });
+  try {
+    await Promise.all(promises);
+    selectedIds.clear();
+    setSyncStatus('synced',`Saved ${promises.length} items`);
+    renderAll();
+  } catch(e) {
+    console.error(e); setSyncStatus('error','Bulk save failed');
+    alert('One or more updates failed. Refresh to check current state.');
+    await refreshData();
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TEAM
+// ─────────────────────────────────────────────────────────────────────────────
+function renderTeam() {
+  const now=today();
+  const el=document.getElementById('team-grid');
+  el.innerHTML=team.map(name=>{
+    const mine=items.filter(i=>i.reviewer===name||i.approver===name);
+    const openN=mine.filter(i=>!i.status.startsWith('Closed')).length;
+    const overdueN=mine.filter(i=>!i.status.startsWith('Closed')&&i.dueDate&&i.dueDate<now).length;
+    return `<div class="team-card${overdueN?' has-overdue':''}">
+      <div><div class="team-name">${name}</div><div class="team-stats">${openN} open${overdueN?`, <span class="overdue-text">${overdueN} overdue</span>`:''}</div></div>
+      <button class="btn btn-red btn-sm" onclick="removeMember('${name}')" title="Remove">✕</button>
+    </div>`;
+  }).join('');
+}
+
+function addTeamMember(){const inp=document.getElementById('new-member'),name=inp.value.trim();if(!name||team.includes(name))return;team.push(name);team.sort((a,b)=>a.localeCompare(b));inp.value='';renderTeam();}
+function removeMember(name){if(!confirm(`Remove ${name} from team?`))return;team=team.filter(t=>t!==name);renderTeam();}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// MODAL
+// ─────────────────────────────────────────────────────────────────────────────
+function openModal(id) {
+  editingId=id||null;
+  document.getElementById('modal-title').textContent=id?'Edit QA Item':'New QA Item';
+  const teamOpts=team.map(t=>`<option value="${t}">${t}</option>`).join('');
+  document.getElementById('f-originator').innerHTML='<option value=""></option>'+teamOpts;
+  document.getElementById('f-reviewer-inp').innerHTML='<option value="">Unassigned</option>'+teamOpts;
+  document.getElementById('f-approver-inp').innerHTML='<option value="">Unassigned</option>'+teamOpts;
+  ['projectCode','docNumber','dueDate','docTitle'].forEach(f=>{
+    const el=document.getElementById('e-'+f);if(el)el.textContent='';
+    const inp=document.getElementById('f-'+f);if(inp)inp.classList.remove('err');
+  });
+  if(id){
+    const i=items.find(x=>x.id===id); if(!i)return;
+    document.getElementById('f-projectCode').value=i.projectCode||'';
+    document.getElementById('f-client-inp').value=i.client||'';
+    document.getElementById('f-scope').value=i.scope||'';
+    document.getElementById('f-folderUrl').value=i.folderUrl||'';
+    document.getElementById('f-docNumber').value=i.docNumber||'';
+    document.getElementById('f-docTitle').value=i.docTitle||'';
+    document.getElementById('f-docType').value=i.docType||'Calculation';
+    document.getElementById('f-revision').value=i.revision||'';
+    document.getElementById('f-originator').value=i.originator||'';
+    document.getElementById('f-reviewer-inp').value=i.reviewer||'';
+    document.getElementById('f-approver-inp').value=i.approver||'';
+    document.getElementById('f-dueDate').value=i.dueDate||'';
+    document.getElementById('f-status-inp').value=i.status||'Open – Unassigned';
+    document.getElementById('f-priority-inp').value=i.priority||'Medium';
+    document.getElementById('f-notes').value=i.notes||'';
+    document.getElementById('f-rpeq').checked=!!i.rpeq;
+  } else {
+    document.getElementById('f-projectCode').value='';
+    document.getElementById('f-client-inp').value='';
+    document.getElementById('f-scope').value='';
+    document.getElementById('f-folderUrl').value='';
+    document.getElementById('f-docNumber').value='';
+    document.getElementById('f-docTitle').value='';
+    document.getElementById('f-docType').value='Calculation';
+    document.getElementById('f-revision').value='A';
+    document.getElementById('f-originator').value=currentUser||'';
+    document.getElementById('f-reviewer-inp').value='';
+    document.getElementById('f-approver-inp').value='';
+    document.getElementById('f-dueDate').value='';
+    document.getElementById('f-status-inp').value='Open – Unassigned';
+    document.getElementById('f-priority-inp').value='Medium';
+    document.getElementById('f-notes').value='';
+    document.getElementById('f-rpeq').checked=false;
+  }
+  document.getElementById('modal-bg').classList.add('open');
+}
+
+function closeModal(){document.getElementById('modal-bg').classList.remove('open');editingId=null;}
+
+function validate(){
+  let ok=true;
+  const pc=document.getElementById('f-projectCode').value.trim();
+  if(!/^\d{5}$/.test(pc)){document.getElementById('e-projectCode').textContent='Must be exactly 5 digits';document.getElementById('f-projectCode').classList.add('err');ok=false;}else{document.getElementById('e-projectCode').textContent='';document.getElementById('f-projectCode').classList.remove('err');}
+  const dn=document.getElementById('f-docNumber').value.trim();
+  if(!dn){document.getElementById('e-docNumber').textContent='Required';document.getElementById('f-docNumber').classList.add('err');ok=false;}else{document.getElementById('e-docNumber').textContent='';document.getElementById('f-docNumber').classList.remove('err');}
+  const dt=document.getElementById('f-docTitle').value.trim();
+  if(!dt){document.getElementById('e-docTitle').textContent='Required';document.getElementById('f-docTitle').classList.add('err');ok=false;}else{document.getElementById('e-docTitle').textContent='';document.getElementById('f-docTitle').classList.remove('err');}
+  const dd=document.getElementById('f-dueDate').value;
+  if(!dd){document.getElementById('e-dueDate').textContent='Required';document.getElementById('f-dueDate').classList.add('err');ok=false;}else{document.getElementById('e-dueDate').textContent='';document.getElementById('f-dueDate').classList.remove('err');}
+  return ok;
+}
+
+async function saveItem(){
+  if(!validate())return;
+  const btn=document.getElementById('save-btn'); btn.disabled=true; btn.textContent='Saving…';
+  const status=document.getElementById('f-status-inp').value;
+  const isClosed=status.startsWith('Closed');
+  const newItem={
+    projectCode:document.getElementById('f-projectCode').value.trim(),
+    client:document.getElementById('f-client-inp').value.trim(),
+    scope:document.getElementById('f-scope').value.trim(),
+    folderUrl:document.getElementById('f-folderUrl').value.trim(),
+    fileUrl:'',
+    docNumber:document.getElementById('f-docNumber').value.trim(),
+    docTitle:document.getElementById('f-docTitle').value.trim(),
+    docType:document.getElementById('f-docType').value,
+    revision:document.getElementById('f-revision').value.trim(),
+    originator:document.getElementById('f-originator').value,
+    reviewer:document.getElementById('f-reviewer-inp').value,
+    approver:document.getElementById('f-approver-inp').value,
+    dueDate:document.getElementById('f-dueDate').value,
+    status, priority:document.getElementById('f-priority-inp').value,
+    notes:document.getElementById('f-notes').value.trim(),
+    rpeq:document.getElementById('f-rpeq').checked,
+    closedAt:isClosed?new Date().toISOString():null,
+  };
+  setSyncStatus('syncing','Saving…');
+  try {
+    if(editingId){
+      const existing=items.find(i=>i.id===editingId);
+      Object.assign(existing,newItem);
+      await updateItem(existing.spId, localToSp(existing).fields);
+    } else {
+      const resp=await createItem(newItem);
+      newItem.id=String(resp.id);
+      newItem.spId=resp.id;
+      items.push(newItem);
+    }
+    setSyncStatus('synced','Saved');
+    closeModal();
+    renderAll();
+  } catch(e) {
+    console.error(e); setSyncStatus('error','Save failed');
+    alert('Failed to save. Please try again.\n\n'+e.message);
+  } finally {
+    btn.disabled=false; btn.textContent='Save Item';
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EXPORT
+// ─────────────────────────────────────────────────────────────────────────────
+function exportCSV(){
+  const filtered=getSorted(getFiltered());
+  const cols=['projectCode','client','scope','docNumber','docTitle','docType','revision','originator','reviewer','approver','dueDate','status','priority','rpeq','notes','closedAt'];
+  const rows=[cols.join(','),...filtered.map(i=>cols.map(c=>`"${String(i[c]??'').replace(/"/g,'""')}"`).join(','))];
+  const blob=new Blob([rows.join('\n')],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`T1P_QA_Register_${today()}.csv`;a.click();
+}
+
+function clearFilters(){
+  ['f-status','f-client','f-project','f-assignee','f-priority'].forEach(id=>document.getElementById(id).value='');
+  ['f-due-from','f-due-to','f-search'].forEach(id=>document.getElementById(id).value='');
+  renderRegister();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BOOT
+// ─────────────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
